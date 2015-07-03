@@ -20,7 +20,7 @@
 [assembly: System.Reflection.AssemblyDescription("")]
 [assembly: System.Reflection.AssemblyCompany("")]
 [assembly: System.Reflection.AssemblyProduct("ELMAH")]
-[assembly: System.Reflection.AssemblyCopyright("Copyright \u00a9 2011")]
+[assembly: System.Reflection.AssemblyCopyright("Copyright \u00a9 2010 Atif Aziz. All rights reserved.")]
 [assembly: System.Reflection.AssemblyTrademark("")]
 [assembly: System.Reflection.AssemblyCulture("")]
 
