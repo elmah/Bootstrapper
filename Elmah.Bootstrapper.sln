@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2013
+VisualStudioVersion = 12.0.31101.0
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elmah.Bootstrapper", "Elmah.Bootstrapper.csproj", "{5339EEDE-C464-474A-9694-F4FF242D1BB5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EBD34322-B998-4AFA-AC05-573510AF9DE3}"
+	ProjectSection(SolutionItems) = preProject
+		build.cmd = build.cmd
+		COPYING.txt = COPYING.txt
+		Elmah.Bootstrapper.nuspec = Elmah.Bootstrapper.nuspec
+		pack.cmd = pack.cmd
+		README.md = README.md
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		NET40-Debug|Any CPU = NET40-Debug|Any CPU
+		NET40-Release|Any CPU = NET40-Release|Any CPU
+		NET45-Debug|Any CPU = NET45-Debug|Any CPU
+		NET45-Release|Any CPU = NET45-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET40-Debug|Any CPU.ActiveCfg = NET40-Debug|Any CPU
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET40-Debug|Any CPU.Build.0 = NET40-Debug|Any CPU
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET40-Release|Any CPU.ActiveCfg = NET40-Release|Any CPU
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET40-Release|Any CPU.Build.0 = NET40-Release|Any CPU
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET45-Debug|Any CPU.ActiveCfg = NET45-Debug|Any CPU
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET45-Debug|Any CPU.Build.0 = NET45-Debug|Any CPU
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET45-Release|Any CPU.ActiveCfg = NET45-Release|Any CPU
+		{5339EEDE-C464-474A-9694-F4FF242D1BB5}.NET45-Release|Any CPU.Build.0 = NET45-Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,9 @@
+*        text=auto
+
+*.cs     text=auto diff=csharp
+
+*.csproj text=auto eol=crlf
+*.vbproj text=auto eol=crlf
+*.fsproj text=auto eol=crlf
+*.dbproj text=auto eol=crlf
+*.sln    text=auto eol=crlf
