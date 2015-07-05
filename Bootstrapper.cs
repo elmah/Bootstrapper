@@ -16,39 +16,49 @@
 
 #region Assembly Information
 
-[assembly: System.Reflection.AssemblyTitle("Elmah.Bootstrapper")]
-[assembly: System.Reflection.AssemblyDescription("")]
-[assembly: System.Reflection.AssemblyCompany("")]
-[assembly: System.Reflection.AssemblyProduct("ELMAH")]
-[assembly: System.Reflection.AssemblyCopyright("Copyright \u00a9 2010 Atif Aziz. All rights reserved.")]
-[assembly: System.Reflection.AssemblyTrademark("")]
-[assembly: System.Reflection.AssemblyCulture("")]
+using System.Reflection;
+using System.Runtime.InteropServices;
+using System.Web;
+using Elmah.Bootstrapper;
 
-[assembly: System.Runtime.InteropServices.ComVisible(false)]
+[assembly: AssemblyTitle("Elmah.Bootstrapper")]
+[assembly: AssemblyDescription("")]
+[assembly: AssemblyCompany("")]
+[assembly: AssemblyProduct("ELMAH")]
+[assembly: AssemblyCopyright("Copyright \u00a9 2010 Atif Aziz. All rights reserved.")]
+[assembly: AssemblyTrademark("")]
+[assembly: AssemblyCulture("")]
 
-[assembly: System.Reflection.AssemblyVersion("0.9.0.0")]
-[assembly: System.Reflection.AssemblyFileVersion("0.9.0.0")]
+[assembly: ComVisible(false)]
+
+[assembly: AssemblyVersion("0.9.18605.0")]
+[assembly: AssemblyFileVersion("0.9.18605.1906")]
 
 #if DEBUG
-[assembly: System.Reflection.AssemblyConfiguration("DEBUG")]
+[assembly: AssemblyConfiguration("DEBUG")]
 #else
 [assembly: System.Reflection.AssemblyConfiguration("RELEASE")]
 #endif
 
 #endregion
 
-[assembly: System.Web.PreApplicationStartMethod(typeof(Elmah.Bootstrapper.Ignition), "Start")]
+[assembly: PreApplicationStartMethod(typeof(Ignition), "Start")]
 
 namespace Elmah.Bootstrapper
 {
     #region Imports
 
     using System;
+    using System.Collections;
     using System.Collections.Generic;
     using System.ComponentModel.Design;
+    using System.Configuration;
     using System.IO;
+    using System.Linq;
     using System.Text.RegularExpressions;
     using System.Web;
+    using System.Web.Hosting;
+    using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 
     #endregion
 
@@ -148,7 +158,7 @@ namespace Elmah.Bootstrapper
         static void RegisterModule(Type moduleType)
         {
 #if NET40
-            Microsoft.Web.Infrastructure.DynamicModuleHelper.DynamicModuleUtility.RegisterModule(moduleType);
+            DynamicModuleUtility.RegisterModule(moduleType);
 #else
             HttpApplication.RegisterModule(moduleType);
 #endif
@@ -199,18 +209,93 @@ namespace Elmah.Bootstrapper
 
             if (context != null)
             {
-                var logPath = context.Server.MapPath("~/App_Data/errors/xmlstore");
+                var cachedErrorLog = new ErrorLog[1];
                 container.AddService(typeof (ErrorLog), delegate
                 {
-                    return Directory.Exists(logPath)
-                         ? new XmlFileErrorLog(logPath)
-                         : (object) new MemoryErrorLog();
+                    return cachedErrorLog[0] ?? (cachedErrorLog[0] =  ErrorLogFactory());
                 });
 
                 context.Items[ContextKey] = container;
             }
 
             return container;
+        }
+
+        static Func<ErrorLog> _errorLogFactory;
+
+        static Func<ErrorLog> ErrorLogFactory
+        {
+            get { return _errorLogFactory ?? (_errorLogFactory = CreateErrorLogFactory()); }
+        }
+
+        static Func<ErrorLog> CreateErrorLogFactory()
+        {
+            string xmlLogPath;
+            return ShouldUseErrorLog(config => new SqlErrorLog(config))
+                ?? ShouldUseErrorLog(config => new SQLiteErrorLog(config))
+                ?? ShouldUseErrorLog(config => new SqlServerCompactErrorLog(config))
+                ?? ShouldUseErrorLog(config => new OracleErrorLog(config))
+                ?? ShouldUseErrorLog(config => new MySqlErrorLog(config))
+                ?? ShouldUseErrorLog(config => new PgsqlErrorLog(config))
+                // ReSharper disable once AssignNullToNotNullAttribute
+                ?? (Directory.Exists(xmlLogPath = HostingEnvironment.MapPath("~/App_Data/errors/xmlstore"))
+                 ? (() => (ErrorLog) new XmlFileErrorLog(xmlLogPath))
+                 : new Func<ErrorLog>(() => (ErrorLog) new MemoryErrorLog()));
+        }
+
+        static Func<ErrorLog> ShouldUseErrorLog<T>(Func<IDictionary, T> factory) where T : ErrorLog
+        {
+            var logTypeName = typeof(T).Name;
+
+            const string errorlogSuffix = "ErrorLog";
+            if (logTypeName.EndsWith(errorlogSuffix, StringComparison.OrdinalIgnoreCase))
+                logTypeName = logTypeName.Substring(0, logTypeName.Length - errorlogSuffix.Length);
+
+            var csName = "elmah:" + logTypeName;
+            var css = ConfigurationManager.ConnectionStrings[csName];
+            if (css == null || string.IsNullOrEmpty(css.ConnectionString))
+                return null;
+
+            var config = new Hashtable
+            {
+                { "connectionString", css.ConnectionString}
+            };
+
+            var appSettings = ConfigurationManager.AppSettings;
+
+            var entries =
+                from prefix in new[] { csName + ":" }
+                from key in appSettings.AllKeys
+                where key.Length > prefix.Length
+                   && key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                select new
+                {
+                    Key = key.Substring(prefix.Length),
+                    Value = appSettings[key]
+                };
+
+            foreach (var e in entries)
+                config[e.Key] = e.Value;
+
+            return () =>
+            {
+                ErrorLog log = factory(/* copy */ new Hashtable(config));
+                if (string.IsNullOrEmpty(log.ApplicationName))
+                    log.ApplicationName = ApplicationName;
+                return log;
+            };
+        }
+
+        static string _applicationName;
+
+        static string ApplicationName
+        {
+            get { return _applicationName ?? (_applicationName = GetAppSetting("applicationName")); }
+        }
+
+        static string GetAppSetting(string name)
+        {
+            return ConfigurationManager.AppSettings["elmah:" + name];
         }
     }
 

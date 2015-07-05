@@ -1,7 +1,7 @@
 # ELMAH Bootstrapper
 
 ELMAH Bootstrapper automatically registers [ELMAH][elmah] during application
-start-up. It is [available as a NuGet package][pkg] and designed to work with 
+start-up. It is [available as a NuGet package][pkg] and designed to work with
 ASP.NET 4.x web applications only.
 
 [ELMAH (Error Logging Modules and Handlers)][elmah] is an ASP.NET web
@@ -16,7 +16,7 @@ between hosting servers, like IIS, and when going from development to
 production.
 
 Recent versions of ASP.NET have made it possible to [dynamically register
-modules at run-time][regmod], during [application start-up][appstart], and 
+modules at run-time][regmod], during [application start-up][appstart], and
 that is exactly what ELMAH Bootstrapper does.
 
 Once you add ELMAH Bootstrapper via NuGet, it will automatically add ELMAH (if
@@ -34,10 +34,26 @@ following URLs can be used to reach the ELMAH web interface:
 - `http://www.example.com/admin/errorlog`
 - `http://www.example.com/foo/bar/errorlog`
 
-Finally, if you add the folders `App_Data\errors\xmlstore` under your web
-application root then ELMAH Bootstrap will also have ELMAH automatically log
-errors there as XML files (using [`XmlFileErrorLog`][xmllog]).
+ELMAH Bootstrapper can also select the `ErrorLog` implementation based on
+certain conventions. For example, if you add the folders `App_Data\errors\xmlstore`
+under your web application root then errors will automatically be logged there
+as XML files, using [`XmlFileErrorLog`][xmllog].
 
+ELMAH ships with six `ErrorLog` implementations that use a database as a
+persistent store:
+
+- `SqlErrorLog`
+- `SQLiteErrorLog`
+- `SqlServerCompactErrorLog`
+- `OracleErrorLog`
+- `MySqlErrorLog`
+- `PgsqlErrorLog`
+
+To use one of these, create a [connection string entry][csadd] in `web.config`
+named `elmah:XXX` where `XXX` is the error log name minus the `ErrorLog`
+suffix. So to use `SqlErrorLog`, create a connection string named `elmah:sql`.
+If the `ErrorLog` implementation requires additional settings, these can
+be supplied via [`appSettings`][appSettings], e.g. `elmah:sql:applicationName`.
 
   [elmah]: https://elmah.github.io/
   [pkg]: https://www.nuget.org/packages/elmah.bootstrapper
@@ -45,3 +61,5 @@ errors there as XML files (using [`XmlFileErrorLog`][xmllog]).
   [regmod]: https://msdn.microsoft.com/en-us/library/system.web.httpapplication.registermodule.aspx
   [appstart]: https://msdn.microsoft.com/en-us/library/system.web.preapplicationstartmethodattribute.aspx
   [xmllog]: https://www.nuget.org/packages/elmah.xml/
+  [csadd]: https://msdn.microsoft.com/en-us/library/vstudio/htw9h4z3(v=vs.100).aspx
+  [appSettings]: https://msdn.microsoft.com/en-us/library/vstudio/ms228154(v=vs.100).aspx
