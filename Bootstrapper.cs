@@ -31,8 +31,8 @@ using Elmah.Bootstrapper;
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("0.9.18605.0")]
-[assembly: AssemblyFileVersion("0.9.18605.1906")]
+[assembly: AssemblyVersion("1.0.18606.0")]
+[assembly: AssemblyFileVersion("1.0.18606.622")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("DEBUG")]
