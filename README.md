@@ -23,8 +23,8 @@ Once you add ELMAH Bootstrapper via NuGet, it will automatically add ELMAH (if
 not already installed) and register it with your web application without any
 need for configuration whatsoever.
 
-To view error log pages, you simply naviagte to any URL within your web
-application that contains the word `elmah`, `errors` or `errorlog`. So if your
+To view error log pages, simply naviagte to any URL within your web application
+that contains the word `elmah`, `errors` or `errorlog`. So if your
 web application is installed at `http://www.example.com/` then any of the
 following URLs can be used to reach the ELMAH web interface:
 
@@ -49,11 +49,14 @@ persistent store:
 - `MySqlErrorLog`
 - `PgsqlErrorLog`
 
-To use one of these, create a [connection string entry][csadd] in `web.config`
-named `elmah:XXX` where `XXX` is the error log name minus the `ErrorLog`
-suffix. So to use `SqlErrorLog`, create a connection string named `elmah:sql`.
+To use one of these, create a [connection string entry][csadd] in your
+`web.config` named `elmah:LOGNAME` where `LOGNAME` is the error log name
+minus the `ErrorLog` suffix (case-insensitive). So to use `SqlErrorLog`,
+create a connection string named `elmah:sql`.
+
 If the `ErrorLog` implementation requires additional settings, these can
-be supplied via [`appSettings`][appSettings], e.g. `elmah:sql:applicationName`.
+be supplied via [`appSettings`][appSettings] using the naming convention
+`elmah:LOGNAME:KEY`, e.g. `elmah:sql:applicationName`.
 
   [elmah]: https://elmah.github.io/
   [pkg]: https://www.nuget.org/packages/elmah.bootstrapper
