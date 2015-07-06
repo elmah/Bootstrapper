@@ -58,7 +58,6 @@ namespace Elmah.Bootstrapper
     using System.Text.RegularExpressions;
     using System.Web;
     using System.Web.Hosting;
-    using Microsoft.Web.Infrastructure.DynamicModuleHelper;
 
     #endregion
 
@@ -158,7 +157,7 @@ namespace Elmah.Bootstrapper
         static void RegisterModule(Type moduleType)
         {
 #if NET40
-            DynamicModuleUtility.RegisterModule(moduleType);
+            Microsoft.Web.Infrastructure.DynamicModuleHelper.DynamicModuleUtility.RegisterModule(moduleType);
 #else
             HttpApplication.RegisterModule(moduleType);
 #endif
