@@ -13,6 +13,7 @@
         <description>Automatically registers ELMAH modules and handlers on application start-up instead of wiring via configuration (web.config).</description>
         <language>en-US</language>
         <tags>elmah error logging unhandled exception</tags>
+        <releaseNotes>Adds ErrorLog selection based on configuration conventions</releaseNotes>
         <dependencies>
             <group targetFramework="net40">
                 <dependency id="elmah.corelibrary" version="1.2.2" />
