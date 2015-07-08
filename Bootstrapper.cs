@@ -170,6 +170,7 @@ namespace Elmah.Bootstrapper
         {
             get
             {
+                // TODO yield return typeof(ErrorLogSecurityModule);
                 yield return typeof(ErrorLogModule);
                 yield return typeof(ErrorMailModule);
                 yield return typeof(ErrorFilterModule);
@@ -300,6 +301,12 @@ namespace Elmah.Bootstrapper
             return ConfigurationManager.AppSettings["elmah:" + name];
         }
     }
+
+    /* TODO sealed class ErrorLogSecurityModule : HttpModuleBase, IRequestAuthorizationHandler
+    {
+        public bool Authorize(HttpContext context) { return false; }
+    }
+    */
 
     sealed class ErrorFilterModule : Elmah.ErrorFilterModule
     {
