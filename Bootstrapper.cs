@@ -31,8 +31,8 @@ using Elmah.Bootstrapper;
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("1.0.18606.0")]
-[assembly: AssemblyFileVersion("1.0.18606.622")]
+[assembly: AssemblyVersion("1.0.18608.0")]
+[assembly: AssemblyFileVersion("1.0.18608.1639")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("DEBUG")]
@@ -57,7 +57,10 @@ namespace Elmah.Bootstrapper
     using System.Linq;
     using System.Text.RegularExpressions;
     using System.Web;
+    using System.Web.Caching;
     using System.Web.Hosting;
+    using System.Xml;
+    using Assertions;
 
     #endregion
 
@@ -298,6 +301,96 @@ namespace Elmah.Bootstrapper
         }
     }
 
+    sealed class ErrorFilterModule : Elmah.ErrorFilterModule
+    {
+        static readonly string CacheKey = typeof(ErrorFilterModule).FullName + ":assertion";
+
+        static IAssertion _assertion;
+
+        public override void Init(HttpApplication application)
+        {
+            var modules =
+                from ms in new[]
+                {
+                    from string m in application.Modules
+                    select application.Modules[m]
+                }
+                from m in ms.OfType<IExceptionFiltering>()
+                select m;
+
+            foreach (var filtering in modules)
+                filtering.Filtering += OnErrorModuleFiltering;
+        }
+
+        public override IAssertion Assertion
+        {
+            get { return _assertion ?? (_assertion = LoadAssertion(() => _assertion = null) ?? base.Assertion); }
+        }
+
+        static readonly DelegatingAssertion FalseAssertion = new DelegatingAssertion(_ => false);
+
+        static IAssertion LoadAssertion(Action onInvalidation)
+        {
+            var configPath = (ConfigurationManager.AppSettings["elmah:errorFilter:assertion"] ?? string.Empty).Trim();
+            if (configPath.Length == 0)
+                configPath = "~/Elmah.ErrorFilter.config";
+
+            var vpp = HostingEnvironment.VirtualPathProvider;
+            var assertion = TryLoadAssertion(() => vpp.TryOpen(configPath)) ?? FalseAssertion;
+
+            HttpRuntime.Cache.Insert(CacheKey, assertion,
+                                     vpp.GetCacheDependency(configPath, new[] { configPath }, DateTime.Now),
+                                     Cache.NoAbsoluteExpiration,
+                                     Cache.NoSlidingExpiration,
+                                     CacheItemPriority.Default,
+                                     delegate { onInvalidation(); });
+
+            return assertion;
+        }
+
+        static IAssertion TryLoadAssertion(Func<Stream> opener)
+        {
+            using (var stream = opener())
+            using (var reader = new StreamReader(stream))
+            {
+                var content = reader.ReadToEnd();
+                var trimmed = content.Trim();
+                if (trimmed.Length == 0)
+                    return null;
+
+                XmlElement element;
+
+                if (trimmed[0] == '<')  // Assume XML
+                {
+                    var config = new XmlDocument();
+                    config.LoadXml(content);
+                    element = (XmlElement) config.SelectSingleNode("errorFilter/test/*")
+                              ?? (XmlElement) config.SelectSingleNode("test/*")
+                              ?? config.DocumentElement;
+                }
+                else                    // Assume JScript expression
+                {
+                    var config = new XmlDocument();
+                    var expression = config.CreateElement("expression");
+                    expression.AppendChild(config.CreateTextNode(content));
+                    var jscript = config.CreateElement("jscript");
+                    jscript.AppendChild(expression);
+                    config.AppendChild(jscript);
+                    element = config.DocumentElement;
+                }
+
+                return AssertionFactory.Create(element);
+            }
+        }
+
+        sealed class DelegatingAssertion : IAssertion
+        {
+            readonly Predicate<object> _predicate;
+            public DelegatingAssertion(Predicate<object> predicate) { _predicate = predicate; }
+            public bool Test(object context) { return _predicate(context); }
+        }
+    }
+
     static class WebExtensions
     {
         /// <summary>
@@ -331,6 +424,15 @@ namespace Elmah.Bootstrapper
         }
     }
 
+    static class VirtualPathProviderExtensions
+    {
+        public static Stream TryOpen(this VirtualPathProvider vpp, string virtualPath)
+        {
+            if (vpp == null) throw new ArgumentNullException("vpp");
+            return vpp.FileExists(virtualPath) ? vpp.GetFile(virtualPath).Open() : null;
+        }
+    }
+
     static class RegexExtensions
     {
         public static T BindNum<T>(this Match match, Func<Group, Group, T> resultor)
@@ -339,6 +441,16 @@ namespace Elmah.Bootstrapper
             if (resultor == null) throw new ArgumentNullException("resultor");
             var groups = match.Groups;
             return resultor(groups[1], groups[2]);
+        }
+    }
+
+    static class StreamExtensions
+    {
+        public static long? TryGetLength(this Stream stream)
+        {
+            if (stream == null) throw new ArgumentNullException("stream");
+            if (!stream.CanSeek) return null;
+            try { return stream.Length; } catch (NotSupportedException) { return null; }
         }
     }
 }

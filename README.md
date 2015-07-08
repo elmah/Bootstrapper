@@ -58,6 +58,38 @@ If the `ErrorLog` implementation requires additional settings, these can
 be supplied via [`appSettings`][appSettings] using the naming convention
 `elmah:LOGNAME:KEY`, e.g. `elmah:sql:applicationName`.
 
+With ELMAH Bootstrapper, you can also [filter errors][filter] from being
+logged or e-mailed by simply adding a file named `Elmah.ErrorFilter.config` in
+your web application root. The content of the file should be the desired
+filtering rules in XML, like:
+
+    <and>
+      <greater binding="HttpStatusCode" value="399" type="Int32" />
+      <lesser  binding="HttpStatusCode" value="500" type="Int32" />
+    </and>
+
+If the file doesn't start with the angle bracket `<` then you can throw in
+an error filtering rule expressed entirely in [JScript][jsfltr]:
+
+    // @assembly mscorlib
+    // @assembly System.Web, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a
+    // @import System.IO
+    // @import System.Web
+
+    $.HttpStatusCode == 404
+    || $.BaseException instanceof FileNotFoundException
+    || $.BaseException instanceof HttpRequestValidationException
+    /* Using RegExp below (see http://msdn.microsoft.com/en-us/library/h6e2eb7w.aspx) */
+    || $.Context.Request.UserAgent.match(/crawler/i)
+    || $.Context.Request.ServerVariables['REMOTE_ADDR'] == '127.0.0.1' // IPv4 only
+
+For some inspiration on rules, see [Error Filtering Examples][fltreg].
+
+ELMAH Bootstrapper can also refresh the error filtering rules whenever the
+`Elmah.ErrorFilter.config` file is updated without causing the application to
+restart!
+
+
   [elmah]: https://elmah.github.io/
   [pkg]: https://www.nuget.org/packages/elmah.bootstrapper
   [aspnet]: http://www.asp.net/
@@ -66,3 +98,6 @@ be supplied via [`appSettings`][appSettings] using the naming convention
   [xmllog]: https://www.nuget.org/packages/elmah.xml/
   [csadd]: https://msdn.microsoft.com/en-us/library/vstudio/htw9h4z3(v=vs.100).aspx
   [appSettings]: https://msdn.microsoft.com/en-us/library/vstudio/ms228154(v=vs.100).aspx
+  [filter]: https://elmah.github.io/a/error-filtering/
+  [fltreg]: https://elmah.github.io/a/error-filtering/
+  [jsfltr]: https://elmah.github.io/a/error-filtering/#using-jscript
