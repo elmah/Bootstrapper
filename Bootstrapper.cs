@@ -31,8 +31,8 @@ using Elmah.Bootstrapper;
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("1.0.18608.0")]
-[assembly: AssemblyFileVersion("1.0.18608.1639")]
+[assembly: AssemblyVersion("1.0.18610.0")]
+[assembly: AssemblyFileVersion("1.0.18610.1634")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("DEBUG")]
@@ -170,7 +170,7 @@ namespace Elmah.Bootstrapper
         {
             get
             {
-                // TODO yield return typeof(ErrorLogSecurityModule);
+                yield return typeof(ErrorLogSecurityModule);
                 yield return typeof(ErrorLogModule);
                 yield return typeof(ErrorMailModule);
                 yield return typeof(ErrorFilterModule);
@@ -302,11 +302,88 @@ namespace Elmah.Bootstrapper
         }
     }
 
-    /* TODO sealed class ErrorLogSecurityModule : HttpModuleBase, IRequestAuthorizationHandler
+    sealed class ErrorLogSecurityModule : HttpModuleBase, IRequestAuthorizationHandler
     {
-        public bool Authorize(HttpContext context) { return false; }
+        static readonly string CacheKey = typeof(ErrorLogSecurityModule).FullName + ":predicate";
+
+        static Predicate<HttpContextBase> _authority;
+
+        public bool Authorize(HttpContext context)
+        {
+            return Authority(new HttpContextWrapper(context));
+        }
+
+        static Predicate<HttpContextBase> Authority
+        {
+            get { return _authority ?? (_authority = Load(() => _authority = null)); }
+        }
+
+        static Predicate<HttpContextBase> Load(Action onInvalidation)
+        {
+            const string configPath = "~/Elmah.Athz.config";
+
+            var vpp = HostingEnvironment.VirtualPathProvider;
+
+            var entries =
+                from path in new[] { configPath }
+                where vpp.FileExists(path)
+                from line in vpp.GetFile(configPath).ReadLines()
+                select line.Trim()
+                into line
+                where line.Length > 0 && line[0] != '#'
+                select Regex.Match(line, @"
+                            ^
+                            (?<not>!?)                               # not
+                            (   (?<role> \^) (?<name>\w[\w\p{P}\d]*) # role (^) + name
+                            |   (?<name> [*?] | \w[\w\p{P}\d]*     ) # authenticated (*) | anonymous (?) | username
+                            |   (?<name> @local)                     # special
+                            )
+                            (?:\s*\#.*)?                             # comment
+                            $", RegexOptions.CultureInvariant
+                              | RegexOptions.IgnorePatternWhitespace)
+                into m
+                where m.Success
+                select m.Groups into gs
+                select new
+                {
+                    Denial = gs["not" ].Length > 0,
+                    IsRole = gs["role"].Success,
+                    Name   = gs["name"].Value,
+                };
+
+            var acl = entries.ToLookup(e => e.Denial,
+                                       e => e.IsRole
+                                          ? Predicates.IsInRole(e.Name)
+                                          : "*" == e.Name
+                                          ? Predicates.IsAuthenticated
+                                          : "?" == e.Name
+                                          ? Predicates.IsAnonymous
+                                          : "@local".Equals(e.Name, StringComparison.OrdinalIgnoreCase)
+                                          ? Predicates.IsLocalRequest
+                                          : Predicates.IsId(e.Name));
+
+            var denials = acl[true ].ToArray();
+            var grants  = acl[false].ToArray();
+
+            Predicate<HttpContextBase> predicate = principal => !denials.Any(p => p(principal)) && grants.Any(p => p(principal));
+
+            HttpRuntime.Cache.Insert(CacheKey, CacheKey,
+                                     vpp.GetCacheDependency(configPath, new[] { configPath }, DateTime.Now),
+                                     delegate { onInvalidation(); });
+
+            return predicate;
+        }
+
+        static class Predicates
+        {
+            public readonly static Predicate<HttpContextBase> IsAuthenticated = ctx => ctx.User.Identity.IsAuthenticated;
+            public readonly static Predicate<HttpContextBase> IsAnonymous     = ctx => !IsAuthenticated(ctx);
+            public readonly static Predicate<HttpContextBase> IsLocalRequest  = ctx => ctx.Request.IsLocal;
+
+            public static Predicate<HttpContextBase> IsId(string name) { return ctx => name.Equals(ctx.User.Identity.Name, StringComparison.OrdinalIgnoreCase); }
+            public static Predicate<HttpContextBase> IsInRole(string name) { return ctx => ctx.User.IsInRole(name); }
+        }
     }
-    */
 
     sealed class ErrorFilterModule : Elmah.ErrorFilterModule
     {
@@ -347,9 +424,6 @@ namespace Elmah.Bootstrapper
 
             HttpRuntime.Cache.Insert(CacheKey, assertion,
                                      vpp.GetCacheDependency(configPath, new[] { configPath }, DateTime.Now),
-                                     Cache.NoAbsoluteExpiration,
-                                     Cache.NoSlidingExpiration,
-                                     CacheItemPriority.Default,
                                      delegate { onInvalidation(); });
 
             return assertion;
@@ -431,12 +505,33 @@ namespace Elmah.Bootstrapper
         }
     }
 
+    static class CacheExtensions
+    {
+        public static void Insert(this Cache cache, string key, object value, CacheDependency cacheDependency, CacheItemRemovedCallback onRemovedCallback)
+        {
+            if (cache == null) throw new ArgumentNullException("cache");
+            cache.Insert(key, value, cacheDependency,
+                         Cache.NoAbsoluteExpiration, Cache.NoSlidingExpiration,
+                         CacheItemPriority.Default, onRemovedCallback);
+        }
+    }
+
     static class VirtualPathProviderExtensions
     {
         public static Stream TryOpen(this VirtualPathProvider vpp, string virtualPath)
         {
             if (vpp == null) throw new ArgumentNullException("vpp");
             return vpp.FileExists(virtualPath) ? vpp.GetFile(virtualPath).Open() : null;
+        }
+
+        public static IEnumerable<string> ReadLines(this VirtualFile file)
+        {
+            if (file == null) throw new ArgumentNullException("file");
+            using (var stream = file.Open())
+            using (var reader = new StreamReader(stream))
+            using (var e = reader.ReadLines())
+                while (e.MoveNext())
+                    yield return e.Current;
         }
     }
 
@@ -458,6 +553,21 @@ namespace Elmah.Bootstrapper
             if (stream == null) throw new ArgumentNullException("stream");
             if (!stream.CanSeek) return null;
             try { return stream.Length; } catch (NotSupportedException) { return null; }
+        }
+    }
+
+    static class TextReaderExtensions
+    {
+        public static IEnumerator<string> ReadLines(this TextReader reader)
+        {
+            if (reader == null) throw new ArgumentNullException("reader");
+            return ReadLinesImpl(reader);
+        }
+
+        static IEnumerator<string> ReadLinesImpl(this TextReader reader)
+        {
+            for (var line = reader.ReadLine(); line != null; line = reader.ReadLine())
+                yield return line;
         }
     }
 }

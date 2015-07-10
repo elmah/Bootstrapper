@@ -89,6 +89,39 @@ ELMAH Bootstrapper can also refresh the error filtering rules whenever the
 `Elmah.ErrorFilter.config` file is updated without causing the application to
 restart!
 
+ELMAH Bootstrapper also allows control over who is authorized to see the
+built-in error log web. The NuGet package automatically adds a file called
+`Elmah.Athz.config` with a single rule permitting only local requests:
+
+    @local
+
+Each line of the file represents an access grant or denial and here is what to
+keep in mind:
+
+- To allow users access, simply list their accounts on separate lines.
+- An asterisk (`*`) represents all authenticated users.
+- An question mark (?) represents all anonymous users.
+- Roles are identified with a caret prefix (`^`), like this: `^admins`
+- A line starting with an exclamation mark or bang (`!`) is a denial;
+  otherwise a grant.
+- Denials take precedence over grants.
+- A hash or pound (`#`) delimits a single-line comment.
+- `@local` is special and represents a local request.
+
+Here is an example `Elmah.Athz.config`:
+
+    # this is a single-line comment
+
+    !?      # deny anonymous users
+    ^admins # allow users in admin role
+    ^ops    # allow users in ops role
+    !bob    # deny Bob
+    alice   # allow Alice
+    @local  # allow local requests
+
+Changes to authorization file are effective immediately and without requiring
+a restart of the web application.
+
 
   [elmah]: https://elmah.github.io/
   [pkg]: https://www.nuget.org/packages/elmah.bootstrapper
