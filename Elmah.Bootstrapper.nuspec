@@ -25,7 +25,7 @@
         </dependencies>
     </metadata>
     <files>
-        <file src="Elmah.Auth.config" target="content\Elmah.Athz.config" />
+        <file src="Elmah.Athz.config" target="content\Elmah.Athz.config" />
         <file src="bin\net-4.0\Release\Elmah.Bootstrapper.*" target="lib\net40" />
         <file src="bin\net-4.5\Release\Elmah.Bootstrapper.*" target="lib\net45" />
         <file src="**.cs" target="src" />
