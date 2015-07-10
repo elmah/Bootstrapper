@@ -39,8 +39,8 @@ certain conventions. For example, if you add the folders `App_Data\errors\xmlsto
 under your web application root then errors will automatically be logged there
 as XML files, using [`XmlFileErrorLog`][xmllog].
 
-ELMAH ships with six `ErrorLog` implementations that use a database as a
-persistent store:
+ELMAH ships with six `ErrorLog` implementations that use a database for
+storage:
 
 - `SqlErrorLog`
 - `SQLiteErrorLog`
@@ -58,10 +58,10 @@ If the `ErrorLog` implementation requires additional settings, these can
 be supplied via [`appSettings`][appSettings] using the naming convention
 `elmah:LOGNAME:KEY`, e.g. `elmah:sql:applicationName`.
 
-With ELMAH Bootstrapper, you can also [filter errors][filter] from being
-logged or e-mailed by simply adding a file named `Elmah.ErrorFilter.config` in
-your web application root. The content of the file should be the desired
-filtering rules in XML, like:
+With ELMAH Bootstrapper, you can also [selectively filter errors][filter] (to
+prevent them being logged or e-mailed) by simply adding a file named
+`Elmah.ErrorFilter.config` in your web application root. The content of the
+file should be the desired filtering rules in XML, like:
 
     <and>
       <greater binding="HttpStatusCode" value="399" type="Int32" />
@@ -69,7 +69,8 @@ filtering rules in XML, like:
     </and>
 
 If the file doesn't start with the angle bracket `<` then you can throw in
-an error filtering rule expressed entirely in [JScript][jsfltr]:
+an error filtering rule expressed entirely as a [JScript][jsfltr] Boolean
+expression:
 
     // @assembly mscorlib
     // @assembly System.Web, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a
@@ -85,7 +86,7 @@ an error filtering rule expressed entirely in [JScript][jsfltr]:
 
 For some inspiration on rules, see [Error Filtering Examples][fltreg].
 
-ELMAH Bootstrapper can also refresh the error filtering rules whenever the
+ELMAH Bootstrapper can refresh the error filtering rules whenever the
 `Elmah.ErrorFilter.config` file is updated without causing the application to
 restart!
 
