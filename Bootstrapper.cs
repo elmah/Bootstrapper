@@ -357,7 +357,7 @@ namespace Elmah.Bootstrapper
 
         static IAssertion TryLoadAssertion(Func<Stream> opener)
         {
-            using (var stream = opener())
+            using (var stream = opener() ?? Stream.Null)
             using (var reader = new StreamReader(stream))
             {
                 var content = reader.ReadToEnd();
