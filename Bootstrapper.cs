@@ -51,6 +51,7 @@ namespace Elmah.Bootstrapper
     using System;
     using System.Collections;
     using System.Collections.Generic;
+    using System.Collections.Specialized;
     using System.ComponentModel.Design;
     using System.Configuration;
     using System.IO;
@@ -264,20 +265,7 @@ namespace Elmah.Bootstrapper
                 { "connectionString", css.ConnectionString}
             };
 
-            var appSettings = ConfigurationManager.AppSettings;
-
-            var entries =
-                from prefix in new[] { csName + ":" }
-                from key in appSettings.AllKeys
-                where key.Length > prefix.Length
-                   && key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
-                select new
-                {
-                    Key = key.Substring(prefix.Length),
-                    Value = appSettings[key]
-                };
-
-            foreach (var e in entries)
+            foreach (var e in Configuration.Default.GetSettings(logTypeName))
                 config[e.Key] = e.Value;
 
             return () =>
@@ -293,12 +281,39 @@ namespace Elmah.Bootstrapper
 
         static string ApplicationName
         {
-            get { return _applicationName ?? (_applicationName = GetAppSetting("applicationName")); }
+            get { return _applicationName ?? (_applicationName = Configuration.Default.GetSetting("applicationName")); }
         }
+    }
 
-        static string GetAppSetting(string name)
+    sealed class Configuration
+    {
+        readonly NameValueCollection _settings;
+
+        public static readonly Configuration Default = new Configuration(ConfigurationManager.AppSettings);
+
+        Configuration(NameValueCollection settings) { _settings = settings; }
+
+        public string GetSetting(string key) { return _settings["elmah:" + key]; }
+
+        public IEnumerable<KeyValuePair<string, string>> GetSettings(string scope)
         {
-            return ConfigurationManager.AppSettings["elmah:" + name];
+            var prefix = "elmah:" + scope + ":";
+            return
+                from key in _settings.AllKeys
+                where key.Length > prefix.Length
+                   && key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
+                select new KeyValuePair<string, string>(key.Substring(prefix.Length), _settings[key]);
+        }
+    }
+
+    sealed class ErrorMailModule : Elmah.ErrorMailModule
+    {
+        protected override object GetConfig()
+        {
+            var config = new Hashtable();
+            foreach (var e in Configuration.Default.GetSettings("errorMail"))
+                config[e.Key] = e.Value;
+            return config.Count > 0 ? config : null;
         }
     }
 
