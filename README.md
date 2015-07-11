@@ -101,7 +101,7 @@ keep in mind:
 
 - To allow users access, simply list their accounts on separate lines.
 - An asterisk (`*`) represents all authenticated users.
-- An question mark (?) represents all anonymous users.
+- An question mark (`?`) represents all anonymous users.
 - Roles are identified with a caret prefix (`^`), like this: `^admins`
 - A line starting with an exclamation mark or bang (`!`) is a denial;
   otherwise a grant.
