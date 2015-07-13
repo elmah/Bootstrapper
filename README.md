@@ -133,5 +133,5 @@ a restart of the web application.
   [csadd]: https://msdn.microsoft.com/en-us/library/vstudio/htw9h4z3(v=vs.100).aspx
   [appSettings]: https://msdn.microsoft.com/en-us/library/vstudio/ms228154(v=vs.100).aspx
   [filter]: https://elmah.github.io/a/error-filtering/
-  [fltreg]: https://elmah.github.io/a/error-filtering/
+  [fltreg]: https://elmah.github.io/a/error-filtering/examples/
   [jsfltr]: https://elmah.github.io/a/error-filtering/#using-jscript
