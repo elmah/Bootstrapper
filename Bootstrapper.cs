@@ -56,6 +56,7 @@ namespace Elmah.Bootstrapper
     using System.Configuration;
     using System.IO;
     using System.Linq;
+    using System.Net.Mail;
     using System.Text.RegularExpressions;
     using System.Web;
     using System.Web.Caching;
@@ -313,7 +314,76 @@ namespace Elmah.Bootstrapper
             var config = new Hashtable();
             foreach (var e in Configuration.Default.GetSettings("errorMail"))
                 config[e.Key] = e.Value;
-            return config.Count > 0 ? config : null;
+            if (config.Count == 0)
+                return null;
+            if (Recipients.To.Count > 0)
+                config["to"] = Recipients.To.ToString();
+            return config;
+        }
+
+        protected override void OnMailing(ErrorMailEventArgs args)
+        {
+            var mail = args.Mail;
+            var recipients = Recipients;
+            if (recipients != null)
+            {
+                mail.To.AddRange(recipients.To);
+                mail.CC.AddRange(recipients.Cc);
+                mail.Bcc.AddRange(recipients.Bcc);
+            }
+            base.OnMailing(args);
+        }
+
+        static readonly string CacheKey = typeof(ErrorMailModule).FullName + ":mail";
+        static RecipientsCollection _recipients;
+
+        static RecipientsCollection Recipients
+        {
+            get { return _recipients ?? (_recipients = Load(() => _recipients = null)); }
+        }
+
+        static RecipientsCollection Load(Action onInvalidation)
+        {
+            const string configPath = "~/Elmah.ErrorMail.config";
+
+            var vpp = HostingEnvironment.VirtualPathProvider;
+
+            var recipients = new RecipientsCollection();
+
+            if (vpp.FileExists(configPath))
+            {
+                var entries =
+                    from line in vpp.GetFile(configPath).ReadLines()
+                    select line.Trim() into line
+                    where line.Length > 0 && line[0] != '#'
+                    select Regex.Match(line, @"^(?:(to|cc|bcc):)?(.+)") into m
+                    where m.Success
+                    select m.Groups into gs
+                    let id = gs[1].Success ? gs[1].Value[0] : 't'
+                    select new
+                    {
+                        Collection = id == 't' ? recipients.To
+                                   : id == 'c' ? recipients.Cc
+                                   : recipients.Bcc,
+                        Addresses  = gs[2].Value,
+                    };
+
+                foreach (var e in entries)
+                    e.Collection.Add(e.Addresses);
+            }
+
+            HttpRuntime.Cache.Insert(CacheKey, CacheKey,
+                                     vpp.GetCacheDependency(configPath, new[] { configPath }, DateTime.Now),
+                                     delegate { onInvalidation(); });
+
+            return recipients;
+        }
+
+        sealed class RecipientsCollection
+        {
+            public readonly MailAddressCollection To  = new MailAddressCollection();
+            public readonly MailAddressCollection Cc  = new MailAddressCollection();
+            public readonly MailAddressCollection Bcc = new MailAddressCollection();
         }
     }
 
@@ -583,6 +653,18 @@ namespace Elmah.Bootstrapper
         {
             for (var line = reader.ReadLine(); line != null; line = reader.ReadLine())
                 yield return line;
+        }
+    }
+
+    static class CollectionExtensions
+    {
+        public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> source)
+        {
+            if (collection == null) throw new ArgumentNullException("collection");
+            if (source == null) throw new ArgumentNullException("source");
+
+            foreach (var item in source)
+                collection.Add(item);
         }
     }
 }
