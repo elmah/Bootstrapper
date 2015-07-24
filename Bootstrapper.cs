@@ -69,11 +69,7 @@ namespace Elmah.Bootstrapper
     sealed class ErrorLogHandlerMappingModule : HttpModuleBase
     {
         ErrorLogPageFactory _errorLogPageFactory;
-
-        ErrorLogPageFactory HandlerFactory
-        {
-            get { return _errorLogPageFactory ?? (_errorLogPageFactory = new ErrorLogPageFactory()); }
-        }
+        ErrorLogPageFactory HandlerFactory => _errorLogPageFactory ?? (_errorLogPageFactory = new ErrorLogPageFactory());
 
         protected override void OnInit(HttpApplication application)
         {
@@ -120,9 +116,7 @@ namespace Elmah.Bootstrapper
         void OnEndRequest(HttpContextBase context)
         {
             var state = context.Items[this] as ContextState;
-            if (state == null)
-                return;
-            state.HandlerFactory.ReleaseHandler(state.Handler);
+            state?.HandlerFactory.ReleaseHandler(state.Handler);
         }
 
         sealed class ContextState
@@ -203,12 +197,9 @@ namespace Elmah.Bootstrapper
 
         static IServiceProvider GetServiceProvider(HttpContextBase context)
         {
-            if (context != null)
-            {
-                var sp = context.Items[ContextKey] as IServiceProvider;
-                if (sp != null)
-                    return sp;
-            }
+            var sp = context?.Items[ContextKey] as IServiceProvider;
+            if (sp != null)
+                return sp;
 
             var container = new ServiceContainer(ServiceCenter.Default(context));
 
@@ -227,11 +218,7 @@ namespace Elmah.Bootstrapper
         }
 
         static Func<ErrorLog> _errorLogFactory;
-
-        static Func<ErrorLog> ErrorLogFactory
-        {
-            get { return _errorLogFactory ?? (_errorLogFactory = CreateErrorLogFactory()); }
-        }
+        static Func<ErrorLog> ErrorLogFactory => _errorLogFactory ?? (_errorLogFactory = CreateErrorLogFactory());
 
         static Func<ErrorLog> CreateErrorLogFactory()
         {
@@ -258,7 +245,7 @@ namespace Elmah.Bootstrapper
 
             var csName = "elmah:" + logTypeName;
             var css = ConfigurationManager.ConnectionStrings[csName];
-            if (css == null || string.IsNullOrEmpty(css.ConnectionString))
+            if (string.IsNullOrEmpty(css?.ConnectionString))
                 return null;
 
             var config = new Hashtable
@@ -279,11 +266,7 @@ namespace Elmah.Bootstrapper
         }
 
         static string _applicationName;
-
-        static string ApplicationName
-        {
-            get { return _applicationName ?? (_applicationName = Configuration.Default.GetSetting("applicationName")); }
-        }
+        static string ApplicationName => _applicationName ?? (_applicationName = Configuration.Default.GetSetting("applicationName"));
     }
 
     sealed class Configuration
@@ -568,9 +551,9 @@ namespace Elmah.Bootstrapper
             Action<EventHandler> subscriber,
             Action<HttpContextBase> handler)
         {
-            if (application == null) throw new ArgumentNullException("application");
-            if (subscriber == null) throw new ArgumentNullException("subscriber");
-            if (handler == null) throw new ArgumentNullException("handler");
+            if (application == null) throw new ArgumentNullException(nameof(application));
+            if (subscriber == null) throw new ArgumentNullException(nameof(subscriber));
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
 
             subscriber((sender, _) => handler(new HttpContextWrapper(((HttpApplication)sender).Context)));
         }
@@ -585,7 +568,7 @@ namespace Elmah.Bootstrapper
             HttpContextBase context, string requestType,
             string url, string pathTranslated)
         {
-            if (factory == null) throw new ArgumentNullException("factory");
+            if (factory == null) throw new ArgumentNullException(nameof(factory));
             return factory.GetHandler(context.ApplicationInstance.Context, requestType, url, pathTranslated);
         }
     }
@@ -594,7 +577,7 @@ namespace Elmah.Bootstrapper
     {
         public static void Insert(this Cache cache, string key, object value, CacheDependency cacheDependency, CacheItemRemovedCallback onRemovedCallback)
         {
-            if (cache == null) throw new ArgumentNullException("cache");
+            if (cache == null) throw new ArgumentNullException(nameof(cache));
             cache.Insert(key, value, cacheDependency,
                          Cache.NoAbsoluteExpiration, Cache.NoSlidingExpiration,
                          CacheItemPriority.Default, onRemovedCallback);
@@ -605,13 +588,13 @@ namespace Elmah.Bootstrapper
     {
         public static Stream TryOpen(this VirtualPathProvider vpp, string virtualPath)
         {
-            if (vpp == null) throw new ArgumentNullException("vpp");
+            if (vpp == null) throw new ArgumentNullException(nameof(vpp));
             return vpp.FileExists(virtualPath) ? vpp.GetFile(virtualPath).Open() : null;
         }
 
         public static IEnumerable<string> ReadLines(this VirtualFile file)
         {
-            if (file == null) throw new ArgumentNullException("file");
+            if (file == null) throw new ArgumentNullException(nameof(file));
             using (var stream = file.Open())
             using (var reader = new StreamReader(stream))
             using (var e = reader.ReadLines())
@@ -624,8 +607,8 @@ namespace Elmah.Bootstrapper
     {
         public static T BindNum<T>(this Match match, Func<Group, Group, T> resultor)
         {
-            if (match == null) throw new ArgumentNullException("match");
-            if (resultor == null) throw new ArgumentNullException("resultor");
+            if (match == null) throw new ArgumentNullException(nameof(match));
+            if (resultor == null) throw new ArgumentNullException(nameof(resultor));
             var groups = match.Groups;
             return resultor(groups[1], groups[2]);
         }
@@ -635,7 +618,7 @@ namespace Elmah.Bootstrapper
     {
         public static long? TryGetLength(this Stream stream)
         {
-            if (stream == null) throw new ArgumentNullException("stream");
+            if (stream == null) throw new ArgumentNullException(nameof(stream));
             if (!stream.CanSeek) return null;
             try { return stream.Length; } catch (NotSupportedException) { return null; }
         }
@@ -645,7 +628,7 @@ namespace Elmah.Bootstrapper
     {
         public static IEnumerator<string> ReadLines(this TextReader reader)
         {
-            if (reader == null) throw new ArgumentNullException("reader");
+            if (reader == null) throw new ArgumentNullException(nameof(reader));
             return ReadLinesImpl(reader);
         }
 
@@ -660,8 +643,8 @@ namespace Elmah.Bootstrapper
     {
         public static void AddRange<T>(this ICollection<T> collection, IEnumerable<T> source)
         {
-            if (collection == null) throw new ArgumentNullException("collection");
-            if (source == null) throw new ArgumentNullException("source");
+            if (collection == null) throw new ArgumentNullException(nameof(collection));
+            if (source == null) throw new ArgumentNullException(nameof(source));
 
             foreach (var item in source)
                 collection.Add(item);
