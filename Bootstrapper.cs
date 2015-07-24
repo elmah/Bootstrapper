@@ -231,8 +231,8 @@ namespace Elmah.Bootstrapper
                 ?? ShouldUseErrorLog(config => new PgsqlErrorLog(config))
                 // ReSharper disable once AssignNullToNotNullAttribute
                 ?? (Directory.Exists(xmlLogPath = HostingEnvironment.MapPath("~/App_Data/errors/xmlstore"))
-                 ? (() => (ErrorLog) new XmlFileErrorLog(xmlLogPath))
-                 : new Func<ErrorLog>(() => (ErrorLog) new MemoryErrorLog()));
+                 ? (() => new XmlFileErrorLog(xmlLogPath) as ErrorLog)
+                 : new Func<ErrorLog>(() => new MemoryErrorLog() as ErrorLog));
         }
 
         static Func<ErrorLog> ShouldUseErrorLog<T>(Func<IDictionary, T> factory) where T : ErrorLog
