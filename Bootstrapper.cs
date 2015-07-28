@@ -31,8 +31,8 @@ using Elmah.Bootstrapper;
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("1.0.18610.0")]
-[assembly: AssemblyFileVersion("1.0.18610.1634")]
+[assembly: AssemblyVersion("1.0.18628.0")]
+[assembly: AssemblyFileVersion("1.0.18628.620")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("DEBUG")]
@@ -57,6 +57,7 @@ namespace Elmah.Bootstrapper
     using System.IO;
     using System.Linq;
     using System.Net.Mail;
+    using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
     using System.Web;
     using System.Web.Caching;
@@ -287,6 +288,34 @@ namespace Elmah.Bootstrapper
                 where key.Length > prefix.Length
                    && key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
                 select new KeyValuePair<string, string>(key.Substring(prefix.Length), _settings[key]);
+        }
+    }
+
+    public static class LoggedErrorEphemeral
+    {
+        static readonly ConditionalWeakTable<Exception, ErrorLogEntry> Table = new ConditionalWeakTable<Exception, ErrorLogEntry>();
+
+        internal static void Add(ErrorLogEntry entry)
+        {
+            if (entry == null) throw new ArgumentNullException(nameof(entry));
+            if (entry.Error.Exception == null) throw new ArgumentException(null, nameof(entry));
+            Table.Add(entry.Error.Exception, entry);
+        }
+
+        public static ErrorLogEntry Find(Exception exception)
+        {
+            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            ErrorLogEntry entry;
+            return Table.TryGetValue(exception, out entry) ? entry : null;
+        }
+    }
+
+    sealed class ErrorLogModule : Elmah.ErrorLogModule
+    {
+        protected override void OnLogged(ErrorLoggedEventArgs args)
+        {
+            LoggedErrorEphemeral.Add(args.Entry);
+            base.OnLogged(args);
         }
     }
 
