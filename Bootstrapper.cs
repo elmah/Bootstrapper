@@ -416,10 +416,8 @@ namespace Elmah.Bootstrapper
         static readonly string CacheKey = typeof(ErrorMailModule).FullName + ":mail";
         static RecipientsCollection _recipients;
 
-        static RecipientsCollection Recipients
-        {
-            get { return _recipients ?? (_recipients = Load(() => _recipients = null)); }
-        }
+        static RecipientsCollection Recipients =>
+            _recipients ?? (_recipients = Load(() => _recipients = null));
 
         static RecipientsCollection Load(Action onInvalidation)
         {
@@ -477,10 +475,8 @@ namespace Elmah.Bootstrapper
             return Authority(new HttpContextWrapper(context));
         }
 
-        static Predicate<HttpContextBase> Authority
-        {
-            get { return _authority ?? (_authority = Load(() => _authority = null)); }
-        }
+        static Predicate<HttpContextBase> Authority =>
+            _authority ?? (_authority = Load(() => _authority = null));
 
         static Predicate<HttpContextBase> Load(Action onInvalidation)
         {
@@ -570,10 +566,8 @@ namespace Elmah.Bootstrapper
                 filtering.Filtering += OnErrorModuleFiltering;
         }
 
-        public override IAssertion Assertion
-        {
-            get { return _assertion ?? (_assertion = LoadAssertion(() => _assertion = null) ?? base.Assertion); }
-        }
+        public override IAssertion Assertion =>
+            _assertion ?? (_assertion = LoadAssertion(() => _assertion = null) ?? base.Assertion);
 
         static readonly DelegatingAssertion FalseAssertion = new DelegatingAssertion(_ => false);
 
