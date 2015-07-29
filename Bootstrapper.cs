@@ -173,6 +173,7 @@ namespace Elmah.Bootstrapper
                 yield return typeof(ErrorFilterModule);
                 yield return typeof(ErrorTweetModule);
                 yield return typeof(ErrorLogHandlerMappingModule);
+                yield return typeof(InitializationModule);
             }
         }
 
@@ -288,6 +289,72 @@ namespace Elmah.Bootstrapper
                 where key.Length > prefix.Length
                    && key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
                 select new KeyValuePair<string, string>(key.Substring(prefix.Length), _settings[key]);
+        }
+    }
+
+    public class HttpModuleInitializingEventArgs : EventArgs
+    {
+        List<IDisposable> _disposables;
+
+        public IHttpModule Module { get; }
+        public HttpApplication Application { get; }
+        public bool HasDisposables => _disposables?.Count > 0;
+        public IEnumerable<IDisposable> Disposables => HasDisposables
+                                                     ? _disposables.AsEnumerable()
+                                                     : Enumerable.Empty<IDisposable>();
+
+        public HttpModuleInitializingEventArgs(IHttpModule module, HttpApplication application)
+        {
+            if (module == null) throw new ArgumentNullException(nameof(module));
+            if (application == null) throw new ArgumentNullException(nameof(application));
+            Module = module;
+            Application = application;
+        }
+
+        public void OnDispose(IDisposable disposable)
+        {
+            if (disposable == null) throw new ArgumentNullException(nameof(disposable));
+            (_disposables ?? (_disposables = new List<IDisposable>())).Add(disposable);
+        }
+
+        public void OnDispose(Action action) => OnDispose(new DelegatingDisposable(action));
+    }
+
+    sealed class DelegatingDisposable : IDisposable
+    {
+        Action OnDispose { get; }
+        public DelegatingDisposable(Action onDispose) { OnDispose = onDispose; }
+        public void Dispose() => OnDispose?.Invoke();
+    }
+
+    public static class HttpModuleInitialization
+    {
+        public static event EventHandler<HttpModuleInitializingEventArgs> Initializing;
+        internal static void OnInitializing(HttpModuleInitializingEventArgs args) { Initializing?.Invoke(args.Module, args); }
+    }
+
+    sealed class InitializationModule : IHttpModule
+    {
+        IDisposable[] _disposables;
+
+        public void Init(HttpApplication context)
+        {
+            var args = new HttpModuleInitializingEventArgs(this, context);
+            HttpModuleInitialization.OnInitializing(args);
+            if (args.HasDisposables)
+                _disposables = args.Disposables.ToArray();
+        }
+
+        public void Dispose()
+        {
+            if ((_disposables?.Length ?? 0) == 0)
+                return;
+            // ReSharper disable once PossibleNullReferenceException
+            var disposables = new IDisposable[_disposables.Length];
+            _disposables?.CopyTo(disposables, 0);
+            _disposables = null;
+            foreach (var disposable in disposables)
+                try { disposable?.Dispose(); } catch { /* ignored */ }
         }
     }
 
