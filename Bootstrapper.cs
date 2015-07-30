@@ -358,7 +358,7 @@ namespace Elmah.Bootstrapper
         }
     }
 
-    public static class LoggedErrorEphemeral
+    public static class LoggedException
     {
         static readonly ConditionalWeakTable<Exception, ErrorLogEntry> Table = new ConditionalWeakTable<Exception, ErrorLogEntry>();
 
@@ -369,7 +369,7 @@ namespace Elmah.Bootstrapper
             Table.Add(entry.Error.Exception, entry);
         }
 
-        public static ErrorLogEntry Find(Exception exception)
+        public static ErrorLogEntry RecallErrorLogEntry(Exception exception)
         {
             if (exception == null) throw new ArgumentNullException(nameof(exception));
             ErrorLogEntry entry;
@@ -381,7 +381,7 @@ namespace Elmah.Bootstrapper
     {
         protected override void OnLogged(ErrorLoggedEventArgs args)
         {
-            LoggedErrorEphemeral.Add(args.Entry);
+            LoggedException.Add(args.Entry);
             base.OnLogged(args);
         }
     }
