@@ -386,8 +386,30 @@ namespace Elmah.Bootstrapper
         }
     }
 
+    public static class ErrorTextFormatterFactory
+    {
+        public static Func<ErrorTextFormatter> Default => () => new ErrorMailHtmlFormatter();
+
+        static Func<ErrorTextFormatter> _current;
+
+        public static Func<ErrorTextFormatter> Current
+        {
+            get { return _current ?? Default; }
+            set
+            {
+                if (value == null) throw new ArgumentNullException(nameof(value));
+                _current = value;
+            }
+        }
+    }
+
     sealed class ErrorMailModule : Elmah.ErrorMailModule
     {
+        protected override ErrorTextFormatter CreateErrorFormatter()
+        {
+            return ErrorTextFormatterFactory.Current() ?? base.CreateErrorFormatter();
+        }
+
         protected override object GetConfig()
         {
             var config = new Hashtable();
