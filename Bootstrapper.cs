@@ -363,6 +363,26 @@ namespace Elmah.Bootstrapper
                 }
             };
         }
+
+        public static void OnError(Action<Exception> handler) => OnErrorImpl(handler);
+        public static void OnError(Action<HttpContextBase> handler) => OnErrorImpl(handler2: handler);
+        public static void OnError(Action<Exception, HttpContextBase> handler) => OnErrorImpl(handler3: handler);
+
+        static void OnErrorImpl(Action<Exception> handler1 = null,
+                                Action<HttpContextBase> handler2 = null,
+                                Action<Exception, HttpContextBase> handler3 = null)
+        {
+            HttpModuleInitialization.Initializing += (_, args) =>
+            {
+                args.Application.Error += (sender, __) =>
+                {
+                    var app = (HttpApplication)sender;
+                    handler1?.Invoke(app.Server.GetLastError());
+                    handler2?.Invoke(new HttpContextWrapper(app.Context));
+                    handler3?.Invoke(app.Server.GetLastError(), new HttpContextWrapper(app.Context));
+                };
+            };
+        }
     }
 
     /* e.g.
