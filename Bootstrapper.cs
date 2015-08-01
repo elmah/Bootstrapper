@@ -333,6 +333,93 @@ namespace Elmah.Bootstrapper
         internal static void OnInitializing(HttpModuleInitializingEventArgs args) { Initializing?.Invoke(args.Module, args); }
     }
 
+    static class App
+    {
+        public static void OnModuleEvent<T, THandler, TEventArgs>(
+            Action<T, THandler> subscriber,
+            Action<T, THandler> unsubcriber,
+            Func<Action<object, TEventArgs>, THandler> converter,
+            Action<T, TEventArgs> handler)
+        {
+            if (subscriber == null) throw new ArgumentNullException(nameof(subscriber));
+            if (unsubcriber == null) throw new ArgumentNullException(nameof(unsubcriber));
+            if (converter == null) throw new ArgumentNullException(nameof(converter));
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
+
+            HttpModuleInitialization.Initializing += (_, args) =>
+            {
+                var mhs = 
+                    from module in args.Application.Modules.AsEnumerable().Select(e => e.Value).OfType<T>()
+                    select new
+                    {
+                        Module  = module,
+                        Handler = converter((sender, a) => handler((T) sender, a)),
+                    };
+
+                foreach (var mh in mhs)
+                {
+                    subscriber(mh.Module, mh.Handler);
+                    args.OnDispose(() => unsubcriber(mh.Module, mh.Handler));
+                }
+            };
+        }
+    }
+
+    /* e.g.
+
+    static class WebApp
+    {
+        static void Init()
+        {
+            App.OnModuleEvent(
+                (m, h) => m.Filtering += h,
+                (m, h) => m.Filtering -= h,
+                h => new ExceptionFilterEventHandler((sender, args) => h(sender, args)),
+                (IExceptionFiltering sender, ExceptionFilterEventArgs args) =>
+                {                    
+                    // TODO event handling code
+                });
+
+            App.OnModuleEvent(
+                (m, h) => m.Mailing += h,
+                (m, h) => m.Mailing -= h,
+                h => new ErrorMailEventHandler((sender, args) => h(sender, args)), 
+                (Elmah.ErrorMailModule sender, ErrorMailEventArgs args) =>
+                {
+                    // TODO event handling code
+                });
+
+            App.OnModuleEvent(
+                (m, h) => m.Mailing += h,
+                (m, h) => m.Mailing -= h,
+                h => new ErrorMailEventHandler((sender, args) => h(sender, args)),
+                (Elmah.ErrorMailModule sender, ErrorMailEventArgs args) =>
+                {
+                    // TODO event handling code
+                });
+
+            App.OnModuleEvent(
+                (m, h) => m.DisposingMail += h,
+                (m, h) => m.DisposingMail -= h,
+                h => new ErrorMailEventHandler((sender, args) => h(sender, args)),
+                (Elmah.ErrorMailModule sender, ErrorMailEventArgs args) =>
+                {
+                    // TODO event handling code
+                });
+
+            App.OnModuleEvent(
+                (m, h) => m.Logged += h,
+                (m, h) => m.Logged -= h,
+                h => new ErrorLoggedEventHandler((sender, args) => h(sender, args)),
+                (Elmah.ErrorLogModule sender, ErrorLoggedEventArgs args) =>
+                {
+                    // TODO event handling code
+                });
+        }
+    }
+
+    */
+
     sealed class InitializationModule : IHttpModule
     {
         IDisposable[] _disposables;
@@ -578,8 +665,8 @@ namespace Elmah.Bootstrapper
             var modules =
                 from ms in new[]
                 {
-                    from string m in application.Modules
-                    select application.Modules[m]
+                    from m in application.Modules.AsEnumerable()
+                    select m.Value
                 }
                 from m in ms.OfType<IExceptionFiltering>()
                 select m;
@@ -652,6 +739,11 @@ namespace Elmah.Bootstrapper
         }
     }
 
+    static class KeyValuePair
+    {
+        public static KeyValuePair<TKey, TValue> Create<TKey, TValue>(TKey key, TValue value) => new KeyValuePair<TKey,TValue>(key, value);
+    }
+
     static class WebExtensions
     {
         /// <summary>
@@ -682,6 +774,16 @@ namespace Elmah.Bootstrapper
         {
             if (factory == null) throw new ArgumentNullException(nameof(factory));
             return factory.GetHandler(context.ApplicationInstance.Context, requestType, url, pathTranslated);
+        }
+    }
+
+    static class HttpModuleCollectionExtensions
+    {
+        public static IEnumerable<KeyValuePair<string, IHttpModule>> AsEnumerable(this HttpModuleCollection modules)
+        {
+            if (modules == null) throw new ArgumentNullException(nameof(modules));
+            return from m in Enumerable.Range(0, modules.Count)
+                   select KeyValuePair.Create(modules.GetKey(m), modules[m]);
         }
     }
 
