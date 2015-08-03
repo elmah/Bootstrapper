@@ -333,7 +333,7 @@ namespace Elmah.Bootstrapper
         internal static void OnInitializing(HttpModuleInitializingEventArgs args) { Initializing?.Invoke(args.Module, args); }
     }
 
-    static class App
+    public static class App
     {
         public static void OnModuleEvent<T, THandler, TEventArgs>(
             Action<T, THandler> subscriber,
@@ -348,7 +348,7 @@ namespace Elmah.Bootstrapper
 
             HttpModuleInitialization.Initializing += (_, args) =>
             {
-                var mhs = 
+                var mhs =
                     from module in args.Application.Modules.AsEnumerable().Select(e => e.Value).OfType<T>()
                     select new
                     {
@@ -396,14 +396,14 @@ namespace Elmah.Bootstrapper
                 (m, h) => m.Filtering -= h,
                 h => new ExceptionFilterEventHandler((sender, args) => h(sender, args)),
                 (IExceptionFiltering sender, ExceptionFilterEventArgs args) =>
-                {                    
+                {
                     // TODO event handling code
                 });
 
             App.OnModuleEvent(
                 (m, h) => m.Mailing += h,
                 (m, h) => m.Mailing -= h,
-                h => new ErrorMailEventHandler((sender, args) => h(sender, args)), 
+                h => new ErrorMailEventHandler((sender, args) => h(sender, args)),
                 (Elmah.ErrorMailModule sender, ErrorMailEventArgs args) =>
                 {
                     // TODO event handling code
