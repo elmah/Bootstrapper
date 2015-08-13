@@ -522,11 +522,9 @@ namespace Elmah.Bootstrapper
             var config = new Hashtable();
             foreach (var e in Configuration.Default.GetSettings("errorMail"))
                 config[e.Key] = e.Value;
-            if (config.Count == 0)
-                return null;
             if (Recipients.To.Count > 0)
                 config["to"] = Recipients.To.ToString();
-            return config;
+            return config.Count == 0 ? null : config;
         }
 
         protected override void OnMailing(ErrorMailEventArgs args)
