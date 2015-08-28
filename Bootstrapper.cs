@@ -59,6 +59,7 @@ namespace Elmah.Bootstrapper
     using System.Net.Mail;
     using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
+    using System.Threading;
     using System.Web;
     using System.Web.Caching;
     using System.Web.Hosting;
@@ -66,6 +67,63 @@ namespace Elmah.Bootstrapper
     using Assertions;
 
     #endregion
+
+    static class Lazy
+    {
+        public static Lazy<T> Create<T>(Func<T> factory) => new Lazy<T>(factory, LazyThreadSafetyMode.None);
+    }
+
+    public static class ErrorLogWeb
+    {
+        public static class UrlPathInfoTokener
+        {
+            static Func<string, int> _current;
+            static readonly Lazy<Func<string, int>> LazyDefaultUrlPathInfoTokener = Lazy.Create(CreateDefault);
+
+            public static Func<string, int> Current
+            {
+                get { return _current ?? Default; }
+                set
+                {
+                    if (value == null) throw new ArgumentNullException(nameof(value));
+                    _current = value;
+                }
+            }
+
+            public static Func<string, int> Default => LazyDefaultUrlPathInfoTokener.Value;
+
+            static Func<string, int> CreateDefault()
+            {
+                return Create(Configuration.Default.GetSetting("web:path")?.Split()
+                                                ?? new[] { "elmah", "errors", "errorlog" });
+            }
+
+            public static readonly char[] Slash = { '/' };
+
+            public static Func<string, int> Create(params string[] paths)
+            {
+                var q = from s in paths
+                        select s.TrimStart(Slash).TrimEnd(Slash) into s
+                        where s.Length > 0
+                        select "/" + s;
+
+                paths = q.ToArray();
+                if (paths.Length == 0)
+                    return delegate { return -1; };
+
+                return path =>
+                {
+                    if (path == null) throw new ArgumentNullException(nameof(path));
+                    if (path.Length == 0 || path[0] != '/') throw new ArgumentException(null, nameof(path));
+                    var match = paths.FirstOrDefault(p => path.StartsWith(p, StringComparison.Ordinal));
+                    return match == null               ? -1
+                         : path.Length == match.Length ? path.Length
+                         : path[match.Length] == '/'   ? match.Length
+                         : -1;
+                };
+            }
+        }
+    }
 
     sealed class ErrorLogHandlerMappingModule : HttpModuleBase
     {
@@ -81,20 +139,36 @@ namespace Elmah.Bootstrapper
         void OnPostMapRequestHandler(HttpContextBase context)
         {
             var request = context.Request;
+            var filePath = request.FilePath;
 
-            var url = request.FilePath;
-            var match = Regex.Match(url, @"(/(?:.*\b)?(?:elmah|errors|errorlog))(/.+)?$",
-                                    RegexOptions.IgnoreCase | RegexOptions.CultureInvariant)
-                             .BindNum((fst, snd) => new { fst.Success, Url = fst.Value, PathInfo = snd.Value });
+            // The parser returns the index to the start of the URL path
+            // info. Everything to the left of it is the script path.
+            // If the index is exactly the length of the string then
+            // the file path identifies the script path entirely and
+            // path info is empty.
 
-            if (!match.Success)
+            var pathInfoIndex = ErrorLogWeb.UrlPathInfoTokener.Current(filePath);
+
+            if (pathInfoIndex < 0 || pathInfoIndex > filePath.Length
+                                  || (pathInfoIndex < filePath.Length && filePath[pathInfoIndex] != '/'))
+            {
+                // URL is a mismatch if index is one of the following:
+                // - Less than 0 meaning nothing found.
+                // - Character at index is not a forward slash (/).
+                // - Index is invalid because it is out of range;
+                //   identifies an implementation issue with the parser.
+
                 return;
+            }
 
-            url = match.Url;
+            var url = filePath.Substring(0, pathInfoIndex);
             // ReSharper disable once PossibleNullReferenceException
             var queryString = request.Url.Query;
+            var pathInfo = pathInfoIndex == filePath.Length
+                         ? string.Empty
+                         : filePath.Substring(pathInfoIndex);
 
-            context.RewritePath(url, match.PathInfo,
+            context.RewritePath(url, pathInfo,
                                 queryString.Length > 0 && queryString[0] == '?'
                                 ? queryString.Substring(1)
                                 : queryString);
