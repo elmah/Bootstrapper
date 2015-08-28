@@ -56,6 +56,7 @@ namespace Elmah.Bootstrapper
     using System.Configuration;
     using System.IO;
     using System.Linq;
+    using System.Net;
     using System.Net.Mail;
     using System.Runtime.CompilerServices;
     using System.Text.RegularExpressions;
@@ -584,6 +585,40 @@ namespace Elmah.Bootstrapper
         }
     }
 
+    public class MailMessageTag
+    {
+        public bool ShouldNotSend { get; set; }
+        public ErrorMailModuleSmtpConfiguration ErrorMailModuleSmtpConfiguration { get; set; }
+    }
+
+    public class ErrorMailModuleSmtpConfiguration
+    {
+        public string Host                  { get; }
+        public int Port                     { get; }
+        public NetworkCredential Credential { get; }
+        public bool UseSsl                  { get; }
+
+        public ErrorMailModuleSmtpConfiguration(string host, int port) :
+            this(host, port, null) {}
+
+        public ErrorMailModuleSmtpConfiguration(string host, int port, NetworkCredential credential) :
+            this(host, port, credential, false) {}
+
+        public ErrorMailModuleSmtpConfiguration(string host, int port, NetworkCredential credential, bool useSsl)
+        {
+            Host       = host ?? string.Empty;
+            Port       = port;
+            Credential = credential;
+            UseSsl     = useSsl;
+        }
+    }
+
+    public static class MailMessageTagLink
+    {
+        static readonly ConditionalWeakTable<MailMessage, MailMessageTag> Tags = new ConditionalWeakTable<MailMessage, MailMessageTag>();
+        public static MailMessageTag GetTag(this MailMessage mail) => Tags.GetOrCreateValue(mail);
+    }
+
     sealed class ErrorMailModule : Elmah.ErrorMailModule
     {
         protected override ErrorTextFormatter CreateErrorFormatter()
@@ -611,7 +646,30 @@ namespace Elmah.Bootstrapper
                 mail.CC.AddRange(recipients.Cc);
                 mail.Bcc.AddRange(recipients.Bcc);
             }
+
+            var userName  = AuthUserName;
+            var password  = AuthPassword;
+            var credential = !string.IsNullOrEmpty(userName) && !string.IsNullOrEmpty(password)
+                           ? new NetworkCredential(userName, password)
+                           : null;
+            mail.GetTag().ErrorMailModuleSmtpConfiguration = new ErrorMailModuleSmtpConfiguration(
+                                                                     SmtpServer, SmtpPort,
+                                                                     credential, UseSsl);
             base.OnMailing(args);
+        }
+
+        protected override void OnMailed(ErrorMailEventArgs args)
+        {
+            if (args.Mail.GetTag().ShouldNotSend)
+                return;
+            base.OnMailed(args);
+        }
+
+        protected override void SendMail(MailMessage mail)
+        {
+            if (mail.GetTag().ShouldNotSend)
+                return;
+            base.SendMail(mail);
         }
 
         static readonly string CacheKey = typeof(ErrorMailModule).FullName + ":mail";
