@@ -23,16 +23,23 @@ Once you add ELMAH Bootstrapper via NuGet, it will automatically add ELMAH (if
 not already installed) and register it with your web application without any
 need for configuration whatsoever.
 
-To view error log pages, simply naviagte to any URL within your web application
-that contains the word `elmah`, `errors` or `errorlog`. So if your
-web application is installed at `http://www.example.com/` then any of the
-following URLs can be used to reach the ELMAH web interface:
+To view error log pages, simply naviagte to `elmah`, `errors` or `errorlog`
+under your web application root. So if your web application is installed at
+`http://www.example.com/` then any of the following URLs can be used to reach
+the ELMAH web interface:
 
 - `http://www.example.com/elmah`
 - `http://www.example.com/errors`
 - `http://www.example.com/errorlog`
-- `http://www.example.com/admin/errorlog`
-- `http://www.example.com/foo/bar/errorlog`
+
+You can change this by adding the key `elmah:web:path` under `<appSettings>`
+in your `web.config`:
+
+    <add key="elmah:web:path" value="/admin/errors" />
+
+Now the error log web will be reachable at `http://www.example.com/admin/elmah`.
+(note that the value is case-sensitive). You can even list multiple
+space-separated paths though one will usually suffice.
 
 ELMAH Bootstrapper can also select the `ErrorLog` implementation based on
 certain conventions. For example, if you add the folders `App_Data\errors\xmlstore`
@@ -96,7 +103,7 @@ built-in error log web. The NuGet package automatically adds a file called
 
     @local
 
-Each line of the file represents an access grant or denial and here is what to
+Each line of the file represents an access grant or denial and here is what to 
 keep in mind:
 
 - To allow users access, simply list their accounts on separate lines.
@@ -122,6 +129,66 @@ Here is an example `Elmah.Athz.config`:
 
 Changes to authorization file are effective immediately and without requiring
 a restart of the web application.
+
+If you do not want to use `Global.asax`, ELMAH Bootrapper also provides
+global hooks for module events via its `App.OnModuleEvent` method. The
+following code illustrates how to use it for various module events:
+
+```c#
+using Elmah;
+using Elmah.Bootstrapper;
+
+static class MyWebApp
+{
+    static void Init()
+    {
+        App.OnModuleEvent(
+            (m, h) => m.Filtering += h,
+            (m, h) => m.Filtering -= h,
+            h => new ExceptionFilterEventHandler((sender, args) => h(sender, args)),
+            (IExceptionFiltering sender, ExceptionFilterEventArgs args) =>
+            {
+                // TODO event handling code
+            });
+
+        App.OnModuleEvent(
+            (m, h) => m.Mailing += h,
+            (m, h) => m.Mailing -= h,
+            h => new ErrorMailEventHandler((sender, args) => h(sender, args)),
+            (Elmah.ErrorMailModule sender, ErrorMailEventArgs args) =>
+            {
+                // TODO event handling code
+            });
+
+        App.OnModuleEvent(
+            (m, h) => m.Mailing += h,
+            (m, h) => m.Mailing -= h,
+            h => new ErrorMailEventHandler((sender, args) => h(sender, args)),
+            (Elmah.ErrorMailModule sender, ErrorMailEventArgs args) =>
+            {
+                // TODO event handling code
+            });
+
+        App.OnModuleEvent(
+            (m, h) => m.DisposingMail += h,
+            (m, h) => m.DisposingMail -= h,
+            h => new ErrorMailEventHandler((sender, args) => h(sender, args)),
+            (Elmah.ErrorMailModule sender, ErrorMailEventArgs args) =>
+            {
+                // TODO event handling code
+            });
+
+        App.OnModuleEvent(
+            (m, h) => m.Logged += h,
+            (m, h) => m.Logged -= h,
+            h => new ErrorLoggedEventHandler((sender, args) => h(sender, args)),
+            (Elmah.ErrorLogModule sender, ErrorLoggedEventArgs args) =>
+            {
+                // TODO event handling code
+            });
+    }
+}
+```
 
 
   [elmah]: https://elmah.github.io/
