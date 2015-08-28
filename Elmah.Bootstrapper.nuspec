@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>elmah.bootstrapper</id>
-        <version>1.0.0-beta4</version>
+        <version>1.0.0-beta5</version>
         <title>ELMAH Bootstrapper</title>
         <authors>Atif Aziz</authors>
         <owners>Atif Aziz</owners>
@@ -13,7 +13,7 @@
         <description>Automatically registers ELMAH modules and handlers on application start-up instead of wiring via configuration (web.config).</description>
         <language>en-US</language>
         <tags>elmah error logging unhandled exception</tags>
-        <releaseNotes>Adds error log web security</releaseNotes>
+        <releaseNotes>Mail configuration, events, formatter hooking, exception linking, module event hooking and configurable error log web URL.</releaseNotes>
         <dependencies>
             <group targetFramework="net40">
                 <dependency id="elmah.corelibrary" version="1.2.2" />
