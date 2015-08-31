@@ -672,45 +672,36 @@ namespace Elmah.Bootstrapper
             base.SendMail(mail);
         }
 
-        static readonly string CacheKey = typeof(ErrorMailModule).FullName + ":mail";
+        static IDisposable _configRefreshSubscription;
         static RecipientsCollection _recipients;
-
-        static RecipientsCollection Recipients =>
-            _recipients ?? (_recipients = Load(() => _recipients = null));
+        static RecipientsCollection Recipients => _recipients ?? (_recipients = Load(() => _recipients = null));
 
         static RecipientsCollection Load(Action onInvalidation)
         {
-            const string configPath = "~/Elmah.ErrorMail.config";
-
-            var vpp = HostingEnvironment.VirtualPathProvider;
+            if (_configRefreshSubscription == null)
+            {
+                var subscription = ErrorMailConfig.AddRefreshedListener(delegate { onInvalidation(); });
+                if (!ReferenceEquals(null, Interlocked.CompareExchange(ref _configRefreshSubscription, subscription, null)))
+                    subscription.Dispose();
+            }
 
             var recipients = new RecipientsCollection();
 
-            if (vpp.FileExists(configPath))
-            {
-                var entries =
-                    from line in vpp.GetFile(configPath).ReadLines()
-                    select line.Trim() into line
-                    where line.Length > 0 && line[0] != '#'
-                    select Regex.Match(line, @"^(?:(to|cc|bcc):)?(.+)") into m
-                    where m.Success
-                    select m.Groups into gs
-                    let id = gs[1].Success ? gs[1].Value[0] : 't'
-                    select new
-                    {
-                        Collection = id == 't' ? recipients.To
-                                   : id == 'c' ? recipients.Cc
-                                   : recipients.Bcc,
-                        Addresses  = gs[2].Value,
-                    };
+            var entries =
+                from e in ErrorMailConfig.Entries.Where(e => e.Key == ":to"
+                                                          || e.Key == ":cc"
+                                                          || e.Key == ":bcc")
+                let id = e.Key[1]
+                select new
+                {
+                    Collection = id == 't' ? recipients.To
+                               : id == 'c' ? recipients.Cc
+                               : recipients.Bcc,
+                    Addresses  = e.Value,
+                };
 
-                foreach (var e in entries)
-                    e.Collection.Add(e.Addresses);
-            }
-
-            HttpRuntime.Cache.Insert(CacheKey, CacheKey,
-                                     vpp.GetCacheDependency(configPath, new[] { configPath }, DateTime.Now),
-                                     delegate { onInvalidation(); });
+            foreach (var e in entries)
+                e.Collection.Add(e.Addresses);
 
             return recipients;
         }
@@ -720,6 +711,44 @@ namespace Elmah.Bootstrapper
             public readonly MailAddressCollection To  = new MailAddressCollection();
             public readonly MailAddressCollection Cc  = new MailAddressCollection();
             public readonly MailAddressCollection Bcc = new MailAddressCollection();
+        }
+    }
+
+    public static class ErrorMailConfig
+    {
+        static readonly string CacheKey = typeof(ErrorMailConfig).FullName + ":mail";
+
+        static IEnumerable<KeyValuePair<string, string>> _entries;
+
+        public static IEnumerable<KeyValuePair<string, string>> Entries =>
+            _entries ?? (_entries = Load(() => { _entries = null; Refreshed?.Invoke(null, EventArgs.Empty); }));
+
+        static IEnumerable<KeyValuePair<string, string>> Load(Action onInvalidation)
+        {
+            const string configPath = "~/Elmah.ErrorMail.config";
+
+            var vpp = HostingEnvironment.VirtualPathProvider;
+
+            var entries = vpp.FileExists(configPath)
+                        ? from g in Gini.Ini.Parse(vpp.GetFile(configPath).ReadAllText())
+                          from e in g
+                          select KeyValuePair.Create(g.Key + ":" + e.Key, e.Value)
+                        : Enumerable.Empty<KeyValuePair<string, string>>();
+
+            HttpRuntime.Cache.Insert(CacheKey, CacheKey,
+                                     vpp.GetCacheDependency(configPath, new[] { configPath }, DateTime.Now),
+                                     delegate { onInvalidation(); });
+
+            return entries;
+        }
+
+        public static event EventHandler Refreshed;
+
+        public static IDisposable AddRefreshedListener(EventHandler handler)
+        {
+            if (handler == null) throw new ArgumentNullException(nameof(handler));
+            Refreshed += handler;
+            return new DelegatingDisposable(() => Refreshed -= handler);
         }
     }
 
@@ -964,6 +993,14 @@ namespace Elmah.Bootstrapper
             using (var e = reader.ReadLines())
                 while (e.MoveNext())
                     yield return e.Current;
+        }
+
+        public static string ReadAllText(this VirtualFile file)
+        {
+            if (file == null) throw new ArgumentNullException(nameof(file));
+            using (var stream = file.Open())
+            using (var reader = new StreamReader(stream))
+                return reader.ReadToEnd();
         }
     }
 
