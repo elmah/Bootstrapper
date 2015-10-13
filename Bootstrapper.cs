@@ -31,8 +31,8 @@ using Elmah.Bootstrapper;
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("1.0.18728.0")]
-[assembly: AssemblyFileVersion("1.0.18728.1704")]
+[assembly: AssemblyVersion("1.0.18913.0")]
+[assembly: AssemblyFileVersion("1.0.18913.1959")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("DEBUG")]
@@ -69,17 +69,12 @@ namespace Elmah.Bootstrapper
 
     #endregion
 
-    static class Lazy
-    {
-        public static Lazy<T> Create<T>(Func<T> factory) => new Lazy<T>(factory, LazyThreadSafetyMode.None);
-    }
-
     public static class ErrorLogWeb
     {
         public static class UrlPathInfoTokener
         {
             static Func<string, int> _current;
-            static readonly Lazy<Func<string, int>> LazyDefaultUrlPathInfoTokener = Lazy.Create(CreateDefault);
+            static Func<string, int> _default;
 
             public static Func<string, int> Current
             {
@@ -91,7 +86,7 @@ namespace Elmah.Bootstrapper
                 }
             }
 
-            public static Func<string, int> Default => LazyDefaultUrlPathInfoTokener.Value;
+            public static Func<string, int> Default => _default ?? (_default = CreateDefault());
 
             static Func<string, int> CreateDefault()
             {
