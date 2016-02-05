@@ -37,7 +37,7 @@ using Elmah.Bootstrapper;
 #if DEBUG
 [assembly: AssemblyConfiguration("DEBUG")]
 #else
-[assembly: System.Reflection.AssemblyConfiguration("RELEASE")]
+[assembly: AssemblyConfiguration("RELEASE")]
 #endif
 
 #endregion
