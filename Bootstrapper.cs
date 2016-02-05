@@ -607,10 +607,8 @@ namespace Elmah.Bootstrapper
 
     sealed class ErrorMailModule : Elmah.ErrorMailModule
     {
-        protected override ErrorTextFormatter CreateErrorFormatter()
-        {
-            return ErrorTextFormatterFactory.Current() ?? base.CreateErrorFormatter();
-        }
+        protected override ErrorTextFormatter CreateErrorFormatter() =>
+            ErrorTextFormatterFactory.Current() ?? base.CreateErrorFormatter();
 
         protected override object GetConfig()
         {
