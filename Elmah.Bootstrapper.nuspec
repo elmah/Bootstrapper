@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>elmah.bootstrapper</id>
-        <version>1.0.0-beta6</version>
+        <version>1.0.0-beta7</version>
         <title>ELMAH Bootstrapper</title>
         <authors>Atif Aziz</authors>
         <owners>Atif Aziz</owners>
@@ -13,12 +13,8 @@
         <description>Automatically registers ELMAH modules and handlers on application start-up instead of wiring via configuration (web.config).</description>
         <language>en-US</language>
         <tags>elmah error logging unhandled exception</tags>
-        <releaseNotes>Fixes issue #1 to do with eager checks in lazy initialization; when thread-safety can be achieved in a lock-free manner.</releaseNotes>
+        <releaseNotes>Microsoft .NET Framework 4.0 is no longer supported.</releaseNotes>
         <dependencies>
-            <group targetFramework="net40">
-                <dependency id="elmah.corelibrary" version="1.2.2" />
-                <dependency id="Microsoft.Web.Infrastructure" version="1.0.0.0" />
-            </group>
             <group targetFramework="net45">
                 <dependency id="elmah.corelibrary" version="1.2.2" />
             </group>
@@ -26,8 +22,7 @@
     </metadata>
     <files>
         <file src="Elmah.Athz.config" target="content\Elmah.Athz.config" />
-        <file src="bin\net-4.0\Release\Elmah.Bootstrapper.*" target="lib\net40" />
-        <file src="bin\net-4.5\Release\Elmah.Bootstrapper.*" target="lib\net45" />
+        <file src="bin\Release\Elmah.Bootstrapper.*" target="lib\net45" />
         <file src="**.cs" target="src" />
         <file src="COPYING.txt" target="COPYING.txt" />
     </files>

@@ -11,15 +11,13 @@ if not exist "%MSBUILD%" (
     echo https://www.microsoft.com/en-us/download/detailscd .aspx?id=48159
     exit /b 1
 )
-nuget restore              ^
- && call :build 40 Debug   ^
- && call :build 40 Release ^
- && call :build 45 Debug   ^
- && call :build 45 Release
+nuget restore           ^
+ && call :build Debug   ^
+ && call :build Release
 popd
 goto :EOF
 
 :build
 setlocal
-"%MSBUILD%" /p:Configuration=NET%1-%2 /v:m %3 %4 %5 %6 %7 %8 %9
+"%MSBUILD%" /p:Configuration=%1 /v:m %2 %3 %4 %5 %6 %7 %8 %9
 goto :EOF

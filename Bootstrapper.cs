@@ -31,8 +31,8 @@ using Elmah.Bootstrapper;
 
 [assembly: ComVisible(false)]
 
-[assembly: AssemblyVersion("1.0.18913.0")]
-[assembly: AssemblyFileVersion("1.0.18913.1959")]
+[assembly: AssemblyVersion("1.0.19305.0")]
+[assembly: AssemblyFileVersion("1.0.19305.2237")]
 
 #if DEBUG
 [assembly: AssemblyConfiguration("DEBUG")]
@@ -221,16 +221,7 @@ namespace Elmah.Bootstrapper
             ServiceCenter.Current = GetServiceProvider;
 
             foreach (var type in DefaultModuleTypeSet)
-                RegisterModule(type);
-        }
-
-        static void RegisterModule(Type moduleType)
-        {
-#if NET40
-            Microsoft.Web.Infrastructure.DynamicModuleHelper.DynamicModuleUtility.RegisterModule(moduleType);
-#else
-            HttpApplication.RegisterModule(moduleType);
-#endif
+                HttpApplication.RegisterModule(type);
         }
 
         static IEnumerable<Type> DefaultModuleTypeSet
