@@ -23,7 +23,7 @@
     <files>
         <file src="Elmah.Athz.config" target="content\Elmah.Athz.config" />
         <file src="bin\Release\Elmah.Bootstrapper.*" target="lib\net45" />
-        <file src="**.cs" target="src" />
+        <file src="**.cs" target="src" exclude="packages\**;obj\**" />
         <file src="COPYING.txt" target="COPYING.txt" />
     </files>
 </package>
