@@ -302,7 +302,7 @@ namespace Elmah.Bootstrapper
         {
             var logTypeName = typeof(T).Name;
 
-            const string errorlogSuffix = "ErrorLog";
+            const string errorlogSuffix = nameof(ErrorLog);
             if (logTypeName.EndsWith(errorlogSuffix, StringComparison.OrdinalIgnoreCase))
                 logTypeName = logTypeName.Substring(0, logTypeName.Length - errorlogSuffix.Length);
 
