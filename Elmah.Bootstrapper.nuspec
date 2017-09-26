@@ -2,7 +2,11 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
     <metadata>
         <id>elmah.bootstrapper</id>
-        <version>1.0.0-beta7</version>
+        <!-- See https://github.com/NuGet/Home/issues/3530 for why a
+             replacement token is used for the version suffix below when
+             the `-Suffix` argument to `nuget pack` serves the same
+             purpose. -->
+        <version>1.0.0$VersionSuffix$</version>
         <title>ELMAH Bootstrapper</title>
         <authors>Atif Aziz</authors>
         <owners>Atif Aziz</owners>
