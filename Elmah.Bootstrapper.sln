@@ -7,6 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Elmah.Bootstrapper", "Elmah
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EBD34322-B998-4AFA-AC05-573510AF9DE3}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		build.cmd = build.cmd
 		COPYING.txt = COPYING.txt
 		Elmah.Bootstrapper.nuspec = Elmah.Bootstrapper.nuspec
