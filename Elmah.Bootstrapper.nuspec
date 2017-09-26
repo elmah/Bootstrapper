@@ -10,6 +10,7 @@
         <title>ELMAH Bootstrapper</title>
         <authors>Atif Aziz</authors>
         <owners>Atif Aziz</owners>
+        <copyright>Copyright &#xa9; 2010 Atif Aziz. All rights reserved.</copyright>
         <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
         <projectUrl>https://elmah.github.io/</projectUrl>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
