@@ -1,5 +1,9 @@
 # ELMAH Bootstrapper
 
+[![Build Status][build-badge]][builds]
+[![NuGet][nuget-badge]][nuget-pkg]
+[![MyGet][myget-badge]][edge-pkgs]
+
 ELMAH Bootstrapper automatically registers [ELMAH][elmah] during application
 start-up. It is [available as a NuGet package][pkg] and designed to work with
 ASP.NET 4.x web applications only.
@@ -191,6 +195,12 @@ static class MyWebApp
 ```
 
 
+  [build-badge]: https://img.shields.io/appveyor/ci/raboof/bootstrapper.svg
+  [myget-badge]: https://img.shields.io/myget/raboof/v/elmah.bootstrapper.svg?label=myget
+  [edge-pkgs]: https://www.myget.org/feed/raboof/package/nuget/elmah.bootstrapper
+  [nuget-badge]: https://img.shields.io/nuget/v/elmah.bootstrapper.svg
+  [nuget-pkg]: https://www.nuget.org/packages/elmah.bootstrapper
+  [builds]: https://ci.appveyor.com/project/raboof/bootstrapper
   [elmah]: https://elmah.github.io/
   [pkg]: https://www.nuget.org/packages/elmah.bootstrapper
   [aspnet]: http://www.asp.net/
