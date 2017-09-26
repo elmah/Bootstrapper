@@ -78,12 +78,8 @@ namespace Elmah.Bootstrapper
 
             public static Func<string, int> Current
             {
-                get { return _current ?? Default; }
-                set
-                {
-                    if (value == null) throw new ArgumentNullException(nameof(value));
-                    _current = value;
-                }
+                get => _current ?? Default;
+                set => _current = value ?? throw new ArgumentNullException(nameof(value));
             }
 
             public static Func<string, int> Default => _default ?? (_default = CreateDefault());
@@ -238,30 +234,19 @@ namespace Elmah.Bootstrapper
             }
         }
 
-        public static IServiceProvider GetServiceProvider(object context)
-        {
-            return GetServiceProvider(AsHttpContextBase(context));
-        }
+        public static IServiceProvider GetServiceProvider(object context) =>
+            GetServiceProvider(AsHttpContextBase(context));
 
         static HttpContextBase AsHttpContextBase(object context)
-        {
-            if (context == null)
-                return null;
-            var httpContextBase = context as HttpContextBase;
-            if (httpContextBase != null)
-                return httpContextBase;
-            var httpContext = context as HttpContext;
-            return httpContext == null
-                 ? null
-                 : new HttpContextWrapper(httpContext);
-        }
+            => context is HttpContextBase hcb ? hcb
+             : context is HttpContext hc ? new HttpContextWrapper(hc)
+             : null;
 
         static readonly object ContextKey = new object();
 
         static IServiceProvider GetServiceProvider(HttpContextBase context)
         {
-            var sp = context?.Items[ContextKey] as IServiceProvider;
-            if (sp != null)
+            if (context?.Items[ContextKey] is IServiceProvider sp)
                 return sp;
 
             var container = new ServiceContainer(ServiceCenter.Default(context));
@@ -366,10 +351,8 @@ namespace Elmah.Bootstrapper
 
         public HttpModuleInitializingEventArgs(IHttpModule module, HttpApplication application)
         {
-            if (module == null) throw new ArgumentNullException(nameof(module));
-            if (application == null) throw new ArgumentNullException(nameof(application));
-            Module = module;
-            Application = application;
+            Module = module ?? throw new ArgumentNullException(nameof(module));
+            Application = application ?? throw new ArgumentNullException(nameof(application));
         }
 
         public void OnDispose(IDisposable disposable)
@@ -537,12 +520,10 @@ namespace Elmah.Bootstrapper
             Table.Add(entry.Error.Exception, entry);
         }
 
-        public static ErrorLogEntry RecallErrorLogEntry(Exception exception)
-        {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
-            ErrorLogEntry entry;
-            return Table.TryGetValue(exception, out entry) ? entry : null;
-        }
+        public static ErrorLogEntry RecallErrorLogEntry(Exception exception) =>
+            exception == null
+            ? throw new ArgumentNullException(nameof(exception))
+            : (Table.TryGetValue(exception, out var entry) ? entry : null);
     }
 
     sealed class ErrorLogModule : Elmah.ErrorLogModule
@@ -562,12 +543,8 @@ namespace Elmah.Bootstrapper
 
         public static Func<ErrorTextFormatter> Current
         {
-            get { return _current ?? Default; }
-            set
-            {
-                if (value == null) throw new ArgumentNullException(nameof(value));
-                _current = value;
-            }
+            get => _current ?? Default;
+            set => _current = value ?? throw new ArgumentNullException(nameof(value));
         }
     }
 
@@ -797,13 +774,14 @@ namespace Elmah.Bootstrapper
             var denials = acl[true ].ToArray();
             var grants  = acl[false].ToArray();
 
-            Predicate<HttpContextBase> predicate = principal => !denials.Any(p => p(principal)) && grants.Any(p => p(principal));
+            bool Predicate(HttpContextBase principal) =>
+                !denials.Any(p => p(principal)) && grants.Any(p => p(principal));
 
             HttpRuntime.Cache.Insert(CacheKey, CacheKey,
                                      vpp.GetCacheDependency(configPath, new[] { configPath }, DateTime.Now),
                                      delegate { onInvalidation(); });
 
-            return predicate;
+            return Predicate;
         }
 
         static class Predicates
