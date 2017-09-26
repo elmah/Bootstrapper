@@ -786,9 +786,9 @@ namespace Elmah.Bootstrapper
 
         static class Predicates
         {
-            public readonly static Predicate<HttpContextBase> IsAuthenticated = ctx => ctx.User.Identity.IsAuthenticated;
-            public readonly static Predicate<HttpContextBase> IsAnonymous     = ctx => !IsAuthenticated(ctx);
-            public readonly static Predicate<HttpContextBase> IsLocalRequest  = ctx => ctx.Request.IsLocal;
+            public static readonly Predicate<HttpContextBase> IsAuthenticated = ctx => ctx.User.Identity.IsAuthenticated;
+            public static readonly Predicate<HttpContextBase> IsAnonymous     = ctx => !IsAuthenticated(ctx);
+            public static readonly Predicate<HttpContextBase> IsLocalRequest  = ctx => ctx.Request.IsLocal;
 
             public static Predicate<HttpContextBase> IsId(string name)        => ctx => name.Equals(ctx.User.Identity.Name, StringComparison.OrdinalIgnoreCase);
             public static Predicate<HttpContextBase> IsInRole(string name)    => ctx => ctx.User.IsInRole(name);
