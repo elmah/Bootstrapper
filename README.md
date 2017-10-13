@@ -196,8 +196,8 @@ static class MyWebApp
 
 
   [build-badge]: https://img.shields.io/appveyor/ci/raboof/bootstrapper.svg
-  [myget-badge]: https://img.shields.io/myget/raboof/v/elmah.bootstrapper.svg?label=myget
-  [edge-pkgs]: https://www.myget.org/feed/raboof/package/nuget/elmah.bootstrapper
+  [myget-badge]: https://img.shields.io/myget/elmah/v/elmah.bootstrapper.svg?label=myget
+  [edge-pkgs]: https://www.myget.org/feed/elmah/package/nuget/elmah.bootstrapper
   [nuget-badge]: https://img.shields.io/nuget/v/elmah.bootstrapper.svg
   [nuget-pkg]: https://www.nuget.org/packages/elmah.bootstrapper
   [builds]: https://ci.appveyor.com/project/raboof/bootstrapper
