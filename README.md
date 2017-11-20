@@ -27,7 +27,7 @@ Once you add ELMAH Bootstrapper via NuGet, it will automatically add ELMAH (if
 not already installed) and register it with your web application without any
 need for configuration whatsoever.
 
-To view error log pages, simply naviagte to `elmah`, `errors` or `errorlog`
+To view error log pages, simply navigate to `elmah`, `errors` or `errorlog`
 under your web application root. So if your web application is installed at
 `http://www.example.com/` then any of the following URLs can be used to reach
 the ELMAH web interface:
