@@ -6,7 +6,7 @@
              replacement token is used for the version suffix below when
              the `-Suffix` argument to `nuget pack` serves the same
              purpose. -->
-        <version>1.0.0$VersionSuffix$</version>
+        <version>1.0.1$VersionSuffix$</version>
         <title>ELMAH Bootstrapper</title>
         <authors>Atif Aziz</authors>
         <owners>Atif Aziz</owners>
