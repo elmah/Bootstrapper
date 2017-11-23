@@ -280,7 +280,13 @@ namespace Elmah.Bootstrapper
                 // ReSharper disable once AssignNullToNotNullAttribute
                 ?? (Directory.Exists(xmlLogPath = HostingEnvironment.MapPath("~/App_Data/errors/xmlstore"))
                  ? (() => new XmlFileErrorLog(xmlLogPath))
-                 : new Func<ErrorLog>(() => new MemoryErrorLog()));
+                 : new Func<ErrorLog>(() => new MemoryErrorLog
+                                            {
+                                                ApplicationName =
+                                                    !string.IsNullOrWhiteSpace(ApplicationName)
+                                                    ? ApplicationName
+                                                    : AppDomain.CurrentDomain.FriendlyName
+                                            }));
         }
 
         static Func<ErrorLog> ShouldUseErrorLog<T>(Func<IDictionary, T> factory) where T : ErrorLog
